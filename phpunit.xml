@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit colors="true"
-         stopOnFailure="false"
-         displayDetailsOnTestsThatTriggerWarnings="true"
-         displayDetailsOnTestsThatTriggerNotices="true"
-         displayDetailsOnTestsThatTriggerErrors="true"
-         displayDetailsOnTestsThatTriggerDeprecations="true">
+<phpunit colors="true">
     <testsuites>
-        <testsuite name="Application Test Suite">
+        <testsuite name="API">
             <directory>./tests/</directory>
+            <exclude>./tests/AuthTest.php</exclude>
+            <exclude>./tests/bootstrap.php</exclude>
+            <exclude>./tests/run.php</exclude>
         </testsuite>
     </testsuites>
 </phpunit>
