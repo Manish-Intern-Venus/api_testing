@@ -10,7 +10,17 @@ From the project root:
 php tests/run.php
 ```
 
-The tests use a temporary JSON user store in `tests/tmp/users.test.json`, so they do not modify the real app data in `data/users.json`.
+The local auth tests use a temporary JSON user store in `tests/tmp/users.test.json`, so they do not modify the real app data in `data/users.json`.
+
+## Run API tests
+
+The API tests are meant to run against an app instance that is already running somewhere else. Set `BASE_URL` to that test instance before running PHPUnit:
+
+```bash
+BASE_URL=https://your-test-app.example phpunit --testsuite API
+```
+
+Use a disposable test environment for API tests because registration scenarios create test users.
 
 ## Current automated coverage
 
@@ -21,6 +31,12 @@ The tests use a temporary JSON user store in `tests/tmp/users.test.json`, so the
 - login success
 - login failure
 - logout session clearing
+- API page loading for `/`, `/registration/`, and `/styles.css`
+- API login redirects, session cookies, and cross-client session isolation
+- API registration success, duplicate usernames, empty usernames, trimmed usernames, weak password variants, and login after registration
+- API authenticated registration redirect behavior
+- API logout behavior for `POST /logout.php` and `GET /logout.php`
+- API escaping of registered usernames on the dashboard
 
 ## Manual tests to perform
 
@@ -60,6 +76,5 @@ The tests use a temporary JSON user store in `tests/tmp/users.test.json`, so the
 
 ## Good next tests to add later
 
-- endpoint tests for `index.php`, `registration/index.php`, and `logout.php`
 - browser tests with Playwright or Cypress
 - validation tests for stricter username rules if you add them
