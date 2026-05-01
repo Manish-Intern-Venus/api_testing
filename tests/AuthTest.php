@@ -56,6 +56,52 @@ $tests = [
 
         assertSame(null, currentUsername(), 'Current user should be cleared after logout.');
     },
+    'profile data can be updated for a user' => function (): void {
+        resetTestStore();
+        registerUser('tester', 'Strong@123');
+
+        $profile = updateUserProfile('tester', 'Test Person', 'tester@example.com');
+
+        assertNotNull($profile, 'Profile update should return updated data.');
+        assertSame('tester', $profile['username'], 'Profile should retain username.');
+        assertSame('Test Person', $profile['display_name'], 'Profile display name should be updated.');
+        assertSame('tester@example.com', $profile['email'], 'Profile email should be updated.');
+    },
+    'settings data can be updated for a user' => function (): void {
+        resetTestStore();
+        registerUser('tester', 'Strong@123');
+
+        $settings = updateUserSettings('tester', [
+            'theme' => 'light',
+            'notifications' => false,
+            'timezone' => 'Asia/Kolkata',
+        ]);
+
+        assertNotNull($settings, 'Settings update should return updated data.');
+        assertSame('light', $settings['theme'], 'Theme should be updated.');
+        assertSame(false, $settings['notifications'], 'Notifications should be updated.');
+        assertSame('Asia/Kolkata', $settings['timezone'], 'Timezone should be updated.');
+    },
+    'tasks can be created updated and deleted per user' => function (): void {
+        resetTestStore();
+        registerUser('tester', 'Strong@123');
+        registerUser('other', 'Strong@123');
+
+        $task = createTask('tester', 'Exercise task API');
+
+        assertNotNull($task, 'Task creation should return a task.');
+        assertSame('Exercise task API', $task['title'], 'Task title should be stored.');
+        assertSame(false, $task['completed'], 'New tasks should be open.');
+        assertSame(1, count(tasksForUser('tester')), 'Tester should have one task.');
+        assertSame(0, count(tasksForUser('other')), 'Other users should not see tester tasks.');
+
+        $updated = updateTask('tester', $task['id'], ['completed' => true]);
+
+        assertNotNull($updated, 'Task update should return a task.');
+        assertSame(true, $updated['completed'], 'Task should be completed.');
+        assertTrue(deleteTask('tester', $task['id']), 'Task deletion should succeed.');
+        assertSame(0, count(tasksForUser('tester')), 'Deleted task should be removed.');
+    },
 ];
 
 $failures = [];

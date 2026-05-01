@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/includes/auth.php';
+require __DIR__ . '/includes/page.php';
 
 $errorMessage = '';
 
@@ -19,24 +19,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentUser = currentUsername();
-$displayAvatar = $currentUser !== null ? strtoupper(substr($currentUser, 0, 1)) : 'A';
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Access</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <div class="background-elements">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
 
-    <?php if ($currentUser === null): ?>
+if ($currentUser === null) {
+    renderHtmlHead('Sign In');
+    ?>
+    <body>
+        <?php renderBackgroundElements(); ?>
+
         <div id="login-container" class="glass-panel active">
             <div class="panel-header">
                 <h2>Welcome Back</h2>
@@ -52,7 +41,7 @@ $displayAvatar = $currentUser !== null ? strtoupper(substr($currentUser, 0, 1)) 
                     <input type="password" id="password" name="password" placeholder="Enter your password" required>
                 </div>
                 <?php if ($errorMessage !== ''): ?>
-                    <div id="error-message" class="error-message"><?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?></div>
+                    <div id="error-message" class="error-message"><?= h($errorMessage) ?></div>
                 <?php endif; ?>
                 <button type="submit" class="btn primary-btn">Sign In</button>
             </form>
@@ -61,23 +50,78 @@ $displayAvatar = $currentUser !== null ? strtoupper(substr($currentUser, 0, 1)) 
                 <a id="show-register-btn" class="text-btn" href="/registration/">Create account</a>
             </p>
         </div>
-    <?php else: ?>
-        <div id="dashboard-container" class="glass-panel active">
-            <div class="panel-header">
-                <h2>Dashboard</h2>
-                <p>You have successfully logged in.</p>
-            </div>
-            <div class="user-profile">
-                <div class="avatar" id="display-avatar"><?= htmlspecialchars($displayAvatar, ENT_QUOTES, 'UTF-8') ?></div>
-                <div class="user-details">
-                    <h3 id="display-username"><?= htmlspecialchars($currentUser, ENT_QUOTES, 'UTF-8') ?></h3>
-                    <p>Premium User</p>
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+$profile = userProfile($currentUser) ?? defaultUserProfile($currentUser);
+$settings = userSettings($currentUser) ?? defaultUserSettings();
+$tasks = tasksForUser($currentUser);
+$openTaskCount = count(array_filter($tasks, static fn (array $task): bool => ($task['completed'] ?? false) === false));
+$completedTaskCount = count($tasks) - $openTaskCount;
+
+renderHtmlHead('Dashboard');
+?>
+<body class="app-body">
+    <?php renderBackgroundElements(); ?>
+
+    <div class="app-shell">
+        <?php renderAuthenticatedNav('dashboard', $currentUser); ?>
+
+        <main id="dashboard-container" class="glass-panel active wide-panel">
+            <div class="page-heading">
+                <div>
+                    <p class="eyebrow">Signed in</p>
+                    <h1>Dashboard</h1>
+                    <p>Account tools, protected pages, and JSON API surfaces are ready for testing.</p>
                 </div>
+                <div class="status-pill" id="session-status">Session active</div>
             </div>
-            <form method="post" action="/logout.php">
-                <button id="logout-btn" class="btn secondary-btn" type="submit">Sign Out</button>
-            </form>
-        </div>
-    <?php endif; ?>
+
+            <section class="summary-grid" aria-label="Account summary">
+                <article class="summary-card">
+                    <span>Profile</span>
+                    <strong id="display-username"><?= h((string) ($profile['display_name'] ?? $currentUser)) ?></strong>
+                    <p><?= h((string) ($profile['role'] ?? 'Premium User')) ?></p>
+                </article>
+                <article class="summary-card">
+                    <span>Open tasks</span>
+                    <strong id="open-task-count"><?= h((string) $openTaskCount) ?></strong>
+                    <p><?= h((string) $completedTaskCount) ?> completed</p>
+                </article>
+                <article class="summary-card">
+                    <span>Preferences</span>
+                    <strong id="settings-theme"><?= h((string) ($settings['theme'] ?? 'dark')) ?></strong>
+                    <p><?= !empty($settings['notifications']) ? 'Notifications on' : 'Notifications off' ?></p>
+                </article>
+            </section>
+
+            <section class="content-grid" aria-label="Protected actions">
+                <article class="action-card">
+                    <h2>Profile API</h2>
+                    <p>Read and update the signed-in user profile with JSON requests.</p>
+                    <code>GET /api/profile.php</code>
+                    <code>PUT /api/profile.php</code>
+                    <a class="inline-link" href="/profile/">Open profile page</a>
+                </article>
+                <article class="action-card">
+                    <h2>Settings API</h2>
+                    <p>Patch theme, notification, and timezone settings for the active session.</p>
+                    <code>GET /api/settings.php</code>
+                    <code>PATCH /api/settings.php</code>
+                    <a class="inline-link" href="/settings/">Open settings page</a>
+                </article>
+                <article class="action-card">
+                    <h2>Task API</h2>
+                    <p>Create, list, complete, rename, and delete task records by HTTP method.</p>
+                    <code>GET /api/tasks.php</code>
+                    <code>POST/PATCH/DELETE /api/tasks.php</code>
+                    <a class="inline-link" href="/activity/">Open activity page</a>
+                </article>
+            </section>
+        </main>
+    </div>
 </body>
 </html>

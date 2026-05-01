@@ -10,7 +10,7 @@ From the project root:
 php tests/run.php
 ```
 
-The local auth tests use a temporary JSON user store in `tests/tmp/users.test.json`, so they do not modify the real app data in `data/users.json`.
+The local auth tests use temporary JSON stores under the system temp directory, so they do not modify the real app data in `data/users.json`.
 
 ## Run API tests
 
@@ -20,7 +20,7 @@ The API tests are meant to run against an app instance that is already running s
 BASE_URL=https://your-test-app.example phpunit --testsuite API
 ```
 
-Use a disposable test environment for API tests because registration scenarios create test users.
+Use a disposable test environment for API tests because registration scenarios create test users and task scenarios create task records.
 
 ## Current automated coverage
 
@@ -32,11 +32,17 @@ Use a disposable test environment for API tests because registration scenarios c
 - login failure
 - logout session clearing
 - API page loading for `/`, `/registration/`, and `/styles.css`
+- API protected page redirects for `/profile/`, `/settings/`, and `/activity/`
+- API authenticated page loading for the post-login profile, settings, and activity pages
 - API login redirects, session cookies, and cross-client session isolation
 - API registration success, duplicate usernames, empty usernames, trimmed usernames, weak password variants, and login after registration
 - API authenticated registration redirect behavior
 - API logout behavior for `POST /logout.php` and `GET /logout.php`
 - API escaping of registered usernames on the dashboard
+- JSON API authentication checks for `/api/session.php`
+- JSON API profile reads, updates, and validation errors
+- JSON API settings reads, updates, and validation errors
+- JSON API task list, create, patch, delete, 401, 404, and 405 behavior
 
 ## Manual tests to perform
 
@@ -48,6 +54,10 @@ Use a disposable test environment for API tests because registration scenarios c
 - login with empty username
 - login with empty password
 - login after registering a new user
+- navigate to Profile, Settings, and Activity after login
+- update profile details from the Profile page
+- update theme, notifications, and timezone from the Settings page
+- create, complete, reopen, and delete tasks from the Activity page
 
 ### Registration flow
 

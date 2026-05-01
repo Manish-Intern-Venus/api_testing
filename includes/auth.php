@@ -91,8 +91,16 @@ function registerUser(string $username, string $password): bool
         return false;
     }
 
+    $now = gmdate('c');
     $users[$username] = [
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
+        'profile' => [
+            'display_name' => $username,
+            'email' => '',
+            'role' => 'Premium User',
+            'created_at' => $now,
+        ],
+        'settings' => defaultUserSettings(),
     ];
 
     return saveUsers($users);
@@ -141,4 +149,253 @@ function currentUsername(): ?string
     }
 
     return $_SESSION['username'];
+}
+
+function defaultUserProfile(string $username): array
+{
+    return [
+        'username' => $username,
+        'display_name' => $username,
+        'email' => '',
+        'role' => 'Premium User',
+        'created_at' => null,
+    ];
+}
+
+function userProfile(string $username): ?array
+{
+    $user = findUser($username);
+
+    if ($user === null) {
+        return null;
+    }
+
+    $profile = is_array($user['profile'] ?? null) ? $user['profile'] : [];
+
+    return array_merge(defaultUserProfile($username), $profile, ['username' => $username]);
+}
+
+function updateUserProfile(string $username, string $displayName, string $email): ?array
+{
+    $users = loadUsers();
+
+    if (!isset($users[$username]) || !is_array($users[$username])) {
+        return null;
+    }
+
+    $existingProfile = is_array($users[$username]['profile'] ?? null) ? $users[$username]['profile'] : [];
+    $users[$username]['profile'] = array_merge($existingProfile, [
+        'display_name' => trim($displayName),
+        'email' => trim($email),
+        'role' => $existingProfile['role'] ?? 'Premium User',
+        'updated_at' => gmdate('c'),
+    ]);
+
+    if (!saveUsers($users)) {
+        return null;
+    }
+
+    return userProfile($username);
+}
+
+function defaultUserSettings(): array
+{
+    return [
+        'theme' => 'dark',
+        'notifications' => true,
+        'timezone' => 'UTC',
+    ];
+}
+
+function userSettings(string $username): ?array
+{
+    $user = findUser($username);
+
+    if ($user === null) {
+        return null;
+    }
+
+    $settings = is_array($user['settings'] ?? null) ? $user['settings'] : [];
+
+    return array_merge(defaultUserSettings(), $settings);
+}
+
+function updateUserSettings(string $username, array $settings): ?array
+{
+    $users = loadUsers();
+
+    if (!isset($users[$username]) || !is_array($users[$username])) {
+        return null;
+    }
+
+    $currentSettings = is_array($users[$username]['settings'] ?? null)
+        ? $users[$username]['settings']
+        : defaultUserSettings();
+
+    $users[$username]['settings'] = array_merge($currentSettings, $settings, [
+        'updated_at' => gmdate('c'),
+    ]);
+
+    if (!saveUsers($users)) {
+        return null;
+    }
+
+    return userSettings($username);
+}
+
+function taskStorePath(): string
+{
+    $customPath = getenv('TASK_STORE');
+
+    if (is_string($customPath) && $customPath !== '') {
+        return $customPath;
+    }
+
+    return __DIR__ . '/../data/tasks.json';
+}
+
+function ensureTaskStoreExists(): void
+{
+    $path = taskStorePath();
+    $directory = dirname($path);
+
+    if (!is_dir($directory)) {
+        mkdir($directory, 0777, true);
+    }
+
+    if (file_exists($path)) {
+        return;
+    }
+
+    saveTasks([]);
+}
+
+function loadTasks(): array
+{
+    ensureTaskStoreExists();
+
+    $contents = file_get_contents(taskStorePath());
+    if ($contents === false || trim($contents) === '') {
+        return [];
+    }
+
+    $tasks = json_decode($contents, true);
+
+    return is_array($tasks) ? $tasks : [];
+}
+
+function saveTasks(array $tasks): bool
+{
+    $storePath = taskStorePath();
+    $directory = dirname($storePath);
+
+    if (!is_dir($directory)) {
+        mkdir($directory, 0777, true);
+    }
+
+    $json = json_encode($tasks, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+    if ($json === false) {
+        return false;
+    }
+
+    return file_put_contents($storePath, $json . PHP_EOL, LOCK_EX) !== false;
+}
+
+function tasksForUser(string $username): array
+{
+    $tasks = loadTasks();
+    $userTasks = $tasks[$username] ?? [];
+
+    return is_array($userTasks) ? array_values($userTasks) : [];
+}
+
+function createTask(string $username, string $title): ?array
+{
+    $title = trim($title);
+
+    if ($title === '') {
+        return null;
+    }
+
+    $tasks = loadTasks();
+    $userTasks = tasksForUser($username);
+    $now = gmdate('c');
+    $task = [
+        'id' => 'task_' . bin2hex(random_bytes(8)),
+        'title' => $title,
+        'completed' => false,
+        'created_at' => $now,
+        'updated_at' => $now,
+    ];
+
+    $userTasks[] = $task;
+    $tasks[$username] = $userTasks;
+
+    if (!saveTasks($tasks)) {
+        return null;
+    }
+
+    return $task;
+}
+
+function updateTask(string $username, string $taskId, array $updates): ?array
+{
+    $tasks = loadTasks();
+    $userTasks = tasksForUser($username);
+
+    foreach ($userTasks as $index => $task) {
+        if (!is_array($task) || ($task['id'] ?? null) !== $taskId) {
+            continue;
+        }
+
+        if (array_key_exists('title', $updates)) {
+            $task['title'] = trim((string) $updates['title']);
+        }
+
+        if (array_key_exists('completed', $updates)) {
+            $task['completed'] = (bool) $updates['completed'];
+        }
+
+        $task['updated_at'] = gmdate('c');
+        $userTasks[$index] = $task;
+        $tasks[$username] = array_values($userTasks);
+
+        if (!saveTasks($tasks)) {
+            return null;
+        }
+
+        return $task;
+    }
+
+    return null;
+}
+
+function deleteTask(string $username, string $taskId): bool
+{
+    $tasks = loadTasks();
+    $userTasks = tasksForUser($username);
+    $filteredTasks = [];
+    $deleted = false;
+
+    foreach ($userTasks as $task) {
+        if (is_array($task) && ($task['id'] ?? null) === $taskId) {
+            $deleted = true;
+            continue;
+        }
+
+        $filteredTasks[] = $task;
+    }
+
+    if (!$deleted) {
+        return false;
+    }
+
+    if ($filteredTasks === []) {
+        unset($tasks[$username]);
+    } else {
+        $tasks[$username] = array_values($filteredTasks);
+    }
+
+    return saveTasks($tasks);
 }

@@ -3,7 +3,7 @@
     <testsuites>
         <testsuite name="API">
             <directory>./tests/</directory>
-            <exclude>./tests/AuthTest.php</exclude>
+            
             <exclude>./tests/bootstrap.php</exclude>
             <exclude>./tests/run.php</exclude>
         </testsuite>

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-require __DIR__ . '/../includes/auth.php';
+require __DIR__ . '/../includes/page.php';
 
 if (currentUsername() !== null) {
     header('Location: /');
@@ -35,14 +35,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - Secure Access</title>
-    <link rel="stylesheet" href="../styles.css">
+            <link rel="stylesheet" href="/styles.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
-    <div class="background-elements">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
+        <?php renderBackgroundElements(); ?>
 
     <div id="register-container" class="glass-panel active">
         <div class="panel-header">
@@ -59,10 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="password" id="register-password" name="password" placeholder="At least 8 chars, 1 number, 1 special char" required>
             </div>
             <?php if ($errorMessage !== ''): ?>
-                <div id="register-error-message" class="error-message"><?= htmlspecialchars($errorMessage, ENT_QUOTES, 'UTF-8') ?></div>
+                <div id="register-error-message" class="error-message"><?= h($errorMessage) ?></div>
             <?php endif; ?>
             <?php if ($successMessage !== ''): ?>
-                <div id="register-success-message" class="success-message"><?= htmlspecialchars($successMessage, ENT_QUOTES, 'UTF-8') ?></div>
+                <div id="register-success-message" class="success-message"><?= h($successMessage) ?></div>
             <?php endif; ?>
             <button type="submit" class="btn primary-btn">Register</button>
         </form>

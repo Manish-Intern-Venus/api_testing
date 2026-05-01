@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-$testStorePath = __DIR__ . '/tmp/users.test.json';
+$testStorePath = sys_get_temp_dir() . '/login-page-users.test.json';
+$testTaskStorePath = sys_get_temp_dir() . '/login-page-tasks.test.json';
 
 putenv('AUTH_USER_STORE=' . $testStorePath);
+putenv('TASK_STORE=' . $testTaskStorePath);
 
 if (session_status() === PHP_SESSION_ACTIVE) {
     session_unset();
@@ -17,9 +19,14 @@ require __DIR__ . '/../includes/auth.php';
 function resetTestStore(array $users = []): void
 {
     $storePath = userStorePath();
+    $taskStorePath = taskStorePath();
 
     if (file_exists($storePath)) {
         unlink($storePath);
+    }
+
+    if (file_exists($taskStorePath)) {
+        unlink($taskStorePath);
     }
 
     if ($users === []) {
@@ -27,6 +34,7 @@ function resetTestStore(array $users = []): void
     }
 
     saveUsers($users);
+    saveTasks([]);
     $_SESSION = [];
 }
 

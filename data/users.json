@@ -1,6 +1,18 @@
 {
     "admin": {
-        "password_hash": "$2y$12$Qs7bq1ALihcv/P0Elv8x0OufaxFVsw7EWsbsz5n99jVXYpB8hOnya"
+        "password_hash": "$2y$12$Qs7bq1ALihcv/P0Elv8x0OufaxFVsw7EWsbsz5n99jVXYpB8hOnya",
+        "profile": {
+            "display_name": "admin",
+            "email": "ctooffice_intern@venusremedies.com",
+            "role": "Premium User",
+            "updated_at": "2026-05-01T11:31:35+00:00"
+        },
+        "settings": {
+            "theme": "light",
+            "notifications": true,
+            "timezone": "UTC",
+            "updated_at": "2026-05-01T11:31:46+00:00"
+        }
     },
     "testuser_1777611948": {
         "password_hash": "$2y$12$R3kB3F5UPzok3lpkYczfvObpAQGNi.PjEKCIYDmemzyhLx2oFHLoK"
